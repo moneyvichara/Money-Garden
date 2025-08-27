@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Garden Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            height: 95vh;
+            max-height: 800px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 12px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            margin-bottom: 4px;
+        }
+
+        .header h2 {
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .garden-section {
+            padding: 15px;
+            border-right: 2px dashed #ddd;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .garden-visual {
+            width: 100%;
+            height: 180px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 40%, #32CD32 70%, #228B22 100%);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .garden-element {
+            position: absolute;
+            font-size: 24px;
+            animation: growIn 1s ease-out forwards, float 3s ease-in-out infinite;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+            z-index: 10;
+        }
+
+        @keyframes growIn {
+            from {
+                opacity: 0;
+                transform: scale(0) rotate(-180deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .progress-section {
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .round-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .round-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .round-dot.completed {
+            background: #4CAF50;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .round-dot.current {
+            background: #FF9800;
+            color: white;
+            transform: scale(1.05);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.1); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .score-display {
+            text-align: center;
+            font-weight: 600;
+            color: #2e7d32;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .score-smiley {
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .learning-section {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 8px;
+            border-left: 3px solid #2196F3;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .learning-section h4 {
+            color: #1565c0;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+
+        .learning-section p {
+            color: #0d47a1;
+            line-height: 1.4;
+            font-size: 0.85rem;
+        }
+
+        .thumb-rule {
+            background: linear-gradient(135deg, #fff3e0, #ffcc80);
+            padding: 8px;
+            border-radius: 8px;
+            margin: 6px 0;
+            border-left: 2px solid #ff9800;
+            font-size: 0.8rem;
+        }
+
+        .thumb-rule strong {
+            color: #e65100;
+        }
+
+        .ideal-answer {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            padding: 8px;
+            border-radius: 8px;
+            margin: 6px 0;
+            border-left: 2px solid #4CAF50;
+            font-size: 0.8rem;
+        }
+
+        .ideal-answer strong {
+            color: #2e7d32;
+        }
+
+        .game-section {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .welcome-screen {
+            text-align: center;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .welcome-screen h2 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .welcome-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .name-input {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #4CAF50;
+            font-size: 1rem;
+            text-align: center;
+            width: 100%;
+            max-width: 300px;
+            align-self: center;
+        }
+
+        .name-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+        }
+
+        .scenario-container {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .scenario-story {
+            background: linear-gradient(135deg, #fff8e1, #f8bbd0, #e8f5e8);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #4CAF50;
+            flex-shrink: 0;
+        }
+
+        .scenario-story h3 {
+            color: #e65100;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .scenario-story p {
+            line-height: 1.4;
+            color: #5d4037;
+            margin-bottom: 6px;
+            font-size: 1.1rem;
+        }
+
+        .decision-point {
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #4CAF50;
+            flex-shrink: 0;
+        }
+
+        .decision-point h4 {
+            color: #2e7d32;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .option {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-color: #4CAF50;
+        }
+
+        .option.selected {
+            background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+            border-color: #2e7d32;
+            transform: scale(1.01);
+        }
+
+        .option .emoji {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .option .text {
+            font-weight: 600;
+            color: #333;
+            line-height: 1.3;
+            font-size: 0.8rem;
+            flex: 1;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .completion-screen {
+            text-align: center;
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .completion-screen h2 {
+            color: #2e7d32;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .final-score {
+            background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+            padding: 12px;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+
+        .garden-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .garden-preview {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .garden-preview h4 {
+            margin-bottom: 6px;
+            color: #2e7d32;
+            font-size: 0.9rem;
+        }
+
+        .mini-garden {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 40%, #32CD32 70%, #228B22 100%);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .certificate {
+            background: white;
+            border: 15px solid #4CAF50;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .certificate h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        .certificate p {
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .round-summary {
+            text-align: center;
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .round-summary h2 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .round-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .round-stat {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .round-stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .round-stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .footer {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            padding: 10px;
+            color: #666;
+            font-size: 0.7rem;
+        }
+
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                height: auto;
+                max-height: none;
+            }
+            .garden-section {
+                border-right: none;
+                border-bottom: 2px dashed #ddd;
+                height: 350px;
+            }
+            .game-section {
+                height: auto;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .game-container {
+                border-radius: 12px;
+            }
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            .garden-visual {
+                height: 150px;
+            }
+            .options-grid {
+                gap: 6px;
+            }
+            .option {
+                padding: 8px;
+            }
+            .option .emoji {
+                font-size: 1.2rem;
+            }
+            .garden-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🌱 MONEY GARDEN SIMULATOR 🌱</h1>
+            <h2>Money Vichara Personal Finance Game - Watch your garden flourish as your money skills grow!</h2>
+        </div>
+
+        <div class="garden-section">
+            <div class="garden-visual" id="current-garden">
+                <!-- Garden elements will be added here dynamically -->
+            </div>
+            
+            <div class="progress-section">
+                <div class="round-indicator">
+                    <div class="round-dot" id="round-1">1</div>
+                    <div class="round-dot" id="round-2">2</div>
+                    <div class="round-dot" id="round-3">3</div>
+                    <div class="round-dot" id="round-4">4</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="score-display" id="score-display">
+                    <span id="score-text">Garden Health: 0/48</span>
+                    <span class="score-smiley" id="score-smiley">🌱</span>
+                </div>
+            </div>
+            
+            <div class="learning-section" id="learning-section">
+                <!-- Learning content will be shown here -->
+            </div>
+        </div>
+
+        <div class="game-section">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="welcome-screen">
+                <h2>Welcome to Your Financial Journey! 🌟</h2>
+                <p style="font-size: 0.9rem; margin: 10px 0; line-height: 1.4; color: #555;">
+                    Transform your financial knowledge into a thriving garden! Make smart decisions, 
+                    watch your garden bloom, and become a master gardener of your money.
+                </p>
+                
+                <input type="text" class="name-input" id="player-name" placeholder="Enter your name for certificate" maxlength="20">
+                <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">(This will appear on your completion certificate)</p>
+                
+                <div class="welcome-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Rounds</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Scenarios</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">48</div>
+                        <div class="stat-label">Max Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">∞</div>
+                        <div class="stat-label">Learning</div>
+                    </div>
+                </div>
+                <button class="btn" onclick="startGame()">🌱 Start Growing Your Garden</button>
+            </div>
+
+            <!-- Round Summary Screens -->
+            <div id="round-1-summary" class="round-summary">
+                <h2>🌰 Round 1 Complete: Foundation Seeds Planted!</h2>
+                <p>You've established the basics of financial planning:</p>
+                <ul style="text-align: left; margin: 15px 0; padding-left: 20px; font-size: 0.9rem;">
+                    <li>Saving for unexpected events</li>
+                    <li>Balanced budgeting approaches</li>
+                    <li>Automated savings strategies</li>
+                </ul>
+                <p>Your financial garden now has a strong foundation to grow upon!</p>
+                <button class="btn" onclick="continueToRound(2)">Continue to Round 2 🛡️</button>
+            </div>
+
+            <div id="round-2-summary" class="round-summary">
+                <h2>🛡️ Round 2 Complete: Protective Fence Built!</h2>
+                <p>You've learned to protect your financial garden:</p>
+                <ul style="text-align: left; margin: 15px 0; padding-left: 20px; font-size: 0.9rem;">
+                    <li>Family protection strategies</li>
+                    <li>Healthcare coverage planning</li>
+                    <li>Managing different types of debt</li>
+                </ul>
+                <p>Your financial future is now well protected from life's storms!</p>
+                <button class="btn" onclick="continueToRound(3)">Continue to Round 3 🌸</button>
+            </div>
+
+            <div id="round-3-summary" class="round-summary">
+                <h2>🌸 Round 3 Complete: Wealth Blooming!</h2>
+                <p>You've mastered wealth building strategies:</p>
+                <ul style="text-align: left; margin: 15px 0; padding-left: 20px; font-size: 0.9rem;">
+                    <li>Investment allocation approaches</li>
+                    <li>Long-term financial planning</li>
+                    <li>Sustainable income strategies</li>
+                </ul>
+                <p>Your financial garden is now blooming with growth and prosperity!</p>
+                <button class="btn" onclick="continueToRound(4)">Continue to Round 4 🏆</button>
+            </div>
+
+            <div id="round-4-summary" class="round-summary">
+                <h2>🏆 Round 4 Complete: Master Gardening Skills!</h2>
+                <p>You've refined your financial management skills:</p>
+                <ul style="text-align: left; margin: 15px 0; padding-left: 20px; font-size: 0.9rem;">
+                    <li>Smart spending approaches</li>
+                    <li>Credit management techniques</li>
+                    <li>Lifestyle balance strategies</li>
+                </ul>
+                <p>You're now ready to become a Master Financial Gardener!</p>
+                <button class="btn" onclick="showCompletionScreen()">View Final Results 🎉</button>
+            </div>
+
+            <!-- Game Progress -->
+            <div id="game-progress" style="display: none;">
+                <div class="scenario-container" id="scenario-container">
+                    <div class="scenario-story" id="scenario-story">
+                        <!-- Scenario content will be loaded here -->
+                    </div>
+
+                    <div class="decision-point" id="decision-point">
+                        <!-- Decision point will be loaded here -->
+                    </div>
+
+                    <div class="options-grid" id="options-container">
+                        <!-- Options will be loaded here -->
+                    </div>
+
+                    <div class="navigation">
+                        <button class="btn" id="prev-btn" onclick="previousScenario()" disabled>← Previous</button>
+                        <span id="scenario-counter" style="font-size: 0.8rem; color: #666;">Scenario 1 of 12</span>
+                        <button class="btn" id="next-btn" onclick="nextScenario()" disabled>Next →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Screen -->
+            <div id="completion-screen" class="completion-screen">
+                <h2>🎉 Congratulations, Master Gardener! 🎉</h2>
+                
+                <div class="final-score">
+                    <h3 id="final-score-display">Score: 0/48</h3>
+                    <p id="final-percentage">0% Success Rate</p>
+                    <p id="final-grade">Grade: -</p>
+                </div>
+
+                <div class="certificate">
+                    <h3>Certificate of Financial Gardening</h3>
+                    <p>This certifies that</p>
+                    <p style="font-size: 1.2rem; font-weight: bold;" id="certificate-name">Player Name</p>
+                    <p>has successfully completed the Financial Garden Simulator</p>
+                    <p>with a score of <span id="certificate-score">0</span>/48</p>
+                    <p>on <span id="certificate-date">date</span></p>
+                </div>
+
+                <div class="garden-comparison">
+                    <div class="garden-preview">
+                        <h4>Your Garden 🌱</h4>
+                        <div class="mini-garden" id="user-garden"></div>
+                        <p id="user-garden-score">Score: 0/48</p>
+                    </div>
+                    <div class="garden-preview">
+                        <h4>Perfect Garden 🏆</h4>
+                        <div class="mini-garden" id="perfect-garden"></div>
+                        <p>Score: 48/48</p>
+                    </div>
+                </div>
+
+                <div id="completion-message" style="margin: 10px 0; font-size: 0.9rem; line-height: 1.4;">
+                    You have successfully completed the Financial Garden Simulator!
+                </div>
+                
+                <button class="btn" onclick="restartGame()">🌱 Grow Another Garden</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            Designed by - <a href="https://moneyvichara.blogspot.com" target="_blank">Money Vichara - moneyvichara.blogspot.com</a>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let currentRound = 1;
+        let currentScenario = 1;
+        let score = 0;
+        let selectedOption = null;
+        let gameData = {};
+        let usedPositions = new Set();
+        let playerName = "";
+
+        // Different flowers and fruits for perfect answers (score 4)
+        const perfectElements = [
+            "🌻", "🌹", "🌸", "🌺", "🌼", "💐",
+            "🍓", "🍎", "🍇", "🍊", "🍒", "🍉"
+        ];
+
+        // Element types based on score
+        const elementTypes = {
+            4: { emoji: "", name: "Beautiful Flower/Fruit" }, // Will be set per scenario
+            3: { emoji: "🌿", name: "Healthy Plant" },
+            2: { emoji: "🍀", name: "Simple Shrub" },
+            1: { emoji: "🌾", name: "Weed" }
+        };
+
+        // Feedback messages based on score
+        const feedbackMessages = {
+            4: "Bountiful Harvest! 🌟",
+            3: "Healthy Growth! 🌿",
+            2: "Needs More Watering. 💧",
+            1: "Withered Plant. 🥀"
+        };
+
+        // Predefined positions for garden elements
+        const gardenPositions = [
+            { top: '15%', left: '15%' }, { top: '20%', left: '30%' }, { top: '25%', left: '45%' }, { top: '30%', left: '60%' },
+            { top: '40%', left: '20%' }, { top: '45%', left: '35%' }, { top: '50%', left: '50%' }, { top: '55%', left: '65%' },
+            { top: '65%', left: '25%' }, { top: '70%', left: '40%' }, { top: '75%', left: '55%' }, { top: '80%', left: '70%' },
+            { top: '20%', left: '10%' }, { top: '30%', left: '25%' }, { top: '40%', left: '40%' }, { top: '50%', left: '55%' },
+            { top: '25%', left: '5%' }, { top: '35%', left: '15%' }, { top: '45%', left: '30%' }, { top: '55%', left: '45%' },
+            { top: '15%', left: '50%' }, { top: '25%', left: '65%' }, { top: '35%', left: '80%' }, { top: '45%', left: '10%' },
+            { top: '20%', left: '85%' }, { top: '30%', left: '5%' }, { top: '40%', left: '15%' }, { top: '50%', left: '30%' },
+            { top: '10%', left: '25%' }, { top: '15%', left: '40%' }, { top: '20%', left: '55%' }, { top: '25%', left: '70%' }
+        ];
+
+        // Complete game scenarios data
+        const scenarios = {
+            1: {
+                round: 1,
+                title: "Rahul's Savings Dilemma",
+                icon: "🌰",
+                story: "Meet Rahul, 25, just landed his first job at ₹60,000/month in Bangalore. His monthly expenses are ₹40,000. He's excited about his new salary and wants to buy a bike, upgrade his wardrobe, and move to a better apartment. His friend suggests he should save money first, but Rahul thinks he can start saving later since he's young. He has ₹50,000 from his previous internship savings.",
+                decision: "What should Rahul do with his ₹50,000 savings?",
+                options: [
+                    { emoji: "🏍️", text: "Buy a bike worth ₹45,000 immediately, enjoy life while young", score: 1, feedback: "Poor choice - No emergency foundation! This leaves Rahul vulnerable to unexpected expenses." },
+                    { emoji: "💼", text: "Use ₹30,000 for bike + lifestyle, keep ₹20,000 as emergency fund", score: 2, feedback: "Partial preparation, but not optimal. The emergency fund is still below the recommended amount." },
+                    { emoji: "🌱", text: "Keep entire ₹50,000 as emergency base, continue building it", score: 4, feedback: "Excellent! Strong foundation for financial growth. This protects Rahul from unexpected financial shocks." },
+                    { emoji: "📈", text: "Invest all ₹50,000 in a balanced mutual fund for potential higher returns", score: 3, feedback: "Good thinking but emergency funds should be liquid, not invested in volatile assets!" }
+                ],
+                learning: {
+                    rule: "Emergency Fund Rule",
+                    description: "Maintain 3-6 months of expenses in an emergency fund. For Rahul (₹40,000 expenses), he needs ₹1.2-2.4 lakhs. Starting early creates a strong foundation - just like preparing soil before planting!"
+                }
+            },
+            2: {
+                round: 1,
+                title: "Priya's Budget Balance",
+                icon: "⚖️",
+                story: "Priya earns ₹80,000/month but struggles to save. Last month: ₹35,000 on rent and groceries, ₹40,000 on shopping and entertainment, ₹5,000 saved. She feels guilty but doesn't know how to balance her money properly.",
+                decision: "How should Priya redesign her monthly ₹80,000 budget?",
+                options: [
+                    { emoji: "📊", text: "₹40,000 needs, ₹24,000 wants, ₹16,000 savings", score: 4, feedback: "Perfect! Balanced approach for sustainable growth. This follows the proven 50-30-20 budgeting rule." },
+                    { emoji: "💸", text: "₹30,000 needs, ₹45,000 wants, ₹5,000 savings", score: 1, feedback: "Unsustainable - Wants are choking financial growth. This leaves no room for emergencies or future goals." },
+                    { emoji: "🔍", text: "₹50,000 needs, ₹20,000 wants, ₹10,000 savings", score: 2, feedback: "Too conservative on wants, which may lead to budgeting fatigue. Needs category seems inflated." },
+                    { emoji: "⚡", text: "₹35,000 needs, ₹35,000 wants, ₹10,000 savings", score: 3, feedback: "Better balance, but savings could be higher. The 50-30-20 rule is more optimal for long-term success." }
+                ],
+                learning: {
+                    rule: "50-30-20 Budgeting Rule",
+                    description: "50% needs, 30% wants, 20% savings/investments. Like a balanced garden, each area needs proper nutrition. Priya's ideal allocation: ₹40,000-₹24,000-₹16,000. Balance creates sustainable growth!"
+                }
+            },
+            3: {
+                round: 1,
+                title: "Amit's Savings Challenge",
+                icon: "🌱",
+                story: "Amit, 28, earning ₹1,00,000/month, always saves 'whatever is left' at month-end. Usually only ₹2,000-3,000 remains. After 3 years of work, he has minimal savings while friends are buying cars and homes. This month, he's determined to change his approach.",
+                decision: "What's Amit's best savings strategy?",
+                options: [
+                    { emoji: "🥇", text: "Auto-transfer ₹20,000 to savings on salary day, budget remaining ₹80,000", score: 4, feedback: "Excellent! Priority saving ensures consistent growth. Automating savings is the most effective strategy." },
+                    { emoji: "⏰", text: "Save whatever remains after all monthly expenses", score: 1, feedback: "This approach has failed him for 3 years! It's unlikely to work now without a fundamental change." },
+                    { emoji: "🎯", text: "Manually transfer ₹15,000 mid-month when he remembers", score: 2, feedback: "Better amount but inconsistent timing is risky. Without automation, he might forget or spend the money." },
+                    { emoji: "💡", text: "Save ₹25,000 first week, ₹10,000 whenever possible later", score: 3, feedback: "Front-loaded approach is good, but may be too aggressive. Starting with 20% is more sustainable." }
+                ],
+                learning: {
+                    rule: "Pay Yourself First Rule",
+                    description: "Save/invest before spending on anything else. Like planting seeds first gets the best soil nutrients, saving first gets the best portion of your income. Amit should automate transfers on salary day!"
+                }
+            },
+            4: {
+                round: 2,
+                title: "Deepak's Family Protection",
+                icon: "🛡️",
+                story: "Deepak, 32, married with a 2-year-old daughter, earns ₹10 lakhs annually. His wife is homemaker. They have ₹40 lakh home loan (₹35,000 EMI) and monthly expenses of ₹50,000. His company provides ₹5 lakh group life insurance. Insurance agent suggests additional cover, but Deepak thinks company coverage is adequate.",
+                decision: "How much life insurance should Deepak have?",
+                options: [
+                    { emoji: "🏠", text: "₹5 lakh company insurance is sufficient", score: 1, feedback: "Dangerously inadequate for family needs! This wouldn't cover even one year of expenses and loan." },
+                    { emoji: "🎯", text: "₹1 crore term life insurance", score: 4, feedback: "Perfect! Adequate protection for family's future. This covers expenses, loans, and future needs. Many experts recommend 10-15 times annual income." },
+                    { emoji: "💰", text: "₹50 lakh term insurance", score: 3, feedback: "Good but slightly low for complete protection. Would cover basic needs but not all future expenses." },
+                    { emoji: "📈", text: "₹25 lakh endowment policy for insurance + investment", score: 2, feedback: "Mixed products dilute both insurance and investment benefits. Term insurance provides better coverage for the premium." }
+                ],
+                learning: {
+                    rule: "Life Insurance Rule",
+                    description: "Life insurance should be 10-15 times annual income through term insurance. Deepak needs ₹1-1.5 crores term insurance. Like a strong fence protects the garden from storms, adequate life insurance protects family from financial disasters!"
+                }
+            },
+            5: {
+                round: 2,
+                title: "Meera's Healthcare Planning",
+                icon: "🏥",
+                story: "Meera's family (husband, 2 kids, parents-in-law - 6 members total) has ₹3 lakh health insurance. Last year, father-in-law's heart surgery cost ₹4.5 lakhs - they broke investments and borrowed money. Now she's worried about adequate coverage for the large family.",
+                decision: "What health insurance strategy should Meera's family adopt?",
+                options: [
+                    { emoji: "💊", text: "₹8 lakh family floater + ₹5 lakh senior citizen top-up", score: 4, feedback: "Comprehensive approach! Perfect for large family. Covers both general family needs and specific senior risks. Consider these as minimum coverage amounts." },
+                    { emoji: "🏥", text: "Increase to ₹6 lakh family cover only", score: 2, feedback: "Better but may still be insufficient for 6 members, especially with seniors who need more coverage." },
+                    { emoji: "💸", text: "₹15 lakh super premium cover for entire family", score: 3, feedback: "Good coverage but may be over-insurance - resources could be better allocated with a base + top-up strategy." },
+                    { emoji: "🎯", text: "Keep ₹3 lakh policy, maintain ₹10 lakh emergency fund for medical needs", score: 1, feedback: "Self-insurance is risky - a major medical event could wipe out the entire emergency fund." }
+                ],
+                learning: {
+                    rule: "Health Insurance Rule",
+                    description: "Family cover = ₹5-10 lakhs minimum, senior citizens need separate ₹5-10 lakhs (consider these as minimums). Like keeping medicine kit ready, health insurance prevents financial emergencies from destroying your wealth garden!"
+                }
+            },
+            6: {
+                round: 2,
+                title: "Arjun's Debt Strategy",
+                icon: "🚫",
+                story: "Arjun, 29, salary ₹75,000/month, has multiple debts: ₹25 lakh home loan (₹22,000 EMI at 8.5%), ₹3 lakh car loan (₹8,000 EMI at 9%), ₹2 lakh personal loan for wedding (₹12,000 EMI at 16%), ₹50,000 credit card debt at 3% monthly interest. He wants to optimize his debt repayment strategy.",
+                decision: "How should Arjun prioritize his debt repayment with ₹10,000 extra monthly budget?",
+                options: [
+                    { emoji: "🌱", text: "Focus extra ₹10,000 on credit card + personal loan first", score: 4, feedback: "Excellent! Remove high-cost debt first for healthy growth. This saves the most on interest payments using the avalanche method." },
+                    { emoji: "🏠", text: "Pay extra ₹10,000 toward home loan to reduce total interest", score: 2, feedback: "Home loan is lower interest debt. Higher-interest debt should be prioritized first to minimize total interest paid." },
+                    { emoji: "📊", text: "Distribute ₹2,500 extra on each debt equally", score: 3, feedback: "Balanced approach but not mathematically optimal. Doesn't minimize total interest paid." },
+                    { emoji: "💰", text: "Pay only minimum EMIs, invest ₹10,000 in mutual funds", score: 1, feedback: "Dangerous! High-interest debt will likely outpace investment returns, increasing net debt." }
+                ],
+                learning: {
+                    rule: "Debt Management Rule",
+                    description: "Prioritize repaying high-interest debt first (avalanche method). Like weeds vs beneficial plants, eliminate costly debt first to improve financial health!"
+                }
+            },
+            7: {
+                round: 3,
+                title: "Rekha's Investment Strategy",
+                icon: "🌸",
+                story: "Rekha, 40, has ₹15 lakhs to invest for retirement (20 years away). Bank FD offers 8% assured returns. Equity mutual funds show 12% historical returns but are volatile. Her risk appetite is moderate. She wants to balance growth with security appropriately for her age.",
+                decision: "How should Rekha allocate her ₹15 lakhs investment?",
+                options: [
+                    { emoji: "🌸", text: "₹9 lakh equity, ₹6 lakh debt - Age-appropriate allocation", score: 4, feedback: "Perfect! Balanced approach for growth with security. Follows the '100 minus age' rule for equity exposure (60% at age 40)." },
+                    { emoji: "🛡️", text: "₹3 lakh equity, ₹12 lakh debt - Ultra-conservative", score: 2, feedback: "Too conservative - inflation may erode purchasing power over 20 years." },
+                    { emoji: "🚀", text: "₹12 lakh equity, ₹3 lakh debt - Aggressive growth", score: 3, feedback: "Slightly aggressive for age 40 but could work with long horizon and proper risk management." },
+                    { emoji: "⚖️", text: "₹7.5 lakh each in equity and debt - Balanced split", score: 1, feedback: "Not age-appropriate. Too conservative for a 20-year investment horizon." }
+                ],
+                learning: {
+                    rule: "Age-Based Equity Allocation Rule",
+                    description: "Equity % = 100 minus age. At 40, Rekha should have 60% equity, 40% debt. Like mixing fast-growing colorful flowers with stable evergreens, this balances growth with security as we age!"
+                }
+            },
+            8: {
+                round: 3,
+                title: "Vinod's Retirement Planning",
+                icon: "🌳",
+                story: "Vinod, 35, currently spends ₹8 lakhs annually. Wants to retire at 60 maintaining same lifestyle (inflation-adjusted). Has 25 years to build corpus, currently ₹5 lakhs invested. Considering ₹15,000 monthly SIP. Wants to ensure comfortable retirement without financial stress.",
+                decision: "What retirement corpus should Vinod target for ₹8 lakh annual expenses?",
+                options: [
+                    { emoji: "🎯", text: "₹2 crore corpus - Standard retirement approach", score: 4, feedback: "Perfect! Follows the 25x rule for retirement planning. This would allow ₹8 lakh annual withdrawals at 4% rate, adjusted for inflation over time." },
+                    { emoji: "💰", text: "₹1.5 crore corpus - Lean retirement", score: 2, feedback: "Below recommended - may need to reduce lifestyle in retirement or risk outliving savings." },
+                    { emoji: "🌟", text: "₹2.5 crore corpus - Comfortable retirement buffer", score: 3, feedback: "Great target with extra buffer for medical emergencies and unexpected expenses." },
+                    { emoji: "🏆", text: "₹3 crore corpus - Premium retirement lifestyle", score: 1, feedback: "Over-ambitious - may require very aggressive savings rate that impacts current quality of life." }
+                ],
+                learning: {
+                    rule: "Retirement Corpus Rule",
+                    description: "Need 25-30 times annual expenses (in today's value). For Vinod's ₹8 lakh expenses, target ₹2-2.4 crores. Remember to adjust for inflation over time. Like planning garden size for family's food needs, retirement corpus must match lifestyle requirements!"
+                }
+            },
+            9: {
+                round: 3,
+                title: "Sunita's Retirement Income",
+                icon: "🍎",
+                story: "Sunita, 62, retired with ₹2.5 crore corpus in balanced portfolio. Needs ₹8 lakhs annually for expenses. Children suggest withdrawing ₹12-15 lakhs yearly since she has 'plenty of money.' She's worried about corpus lasting 25-30 years and maintaining purchasing power.",
+                decision: "How much should Sunita withdraw annually from her ₹2.5 crore corpus?",
+                options: [
+                    { emoji: "🌿", text: "₹10 lakhs annually - Sustainable approach", score: 4, feedback: "Perfect! Sustainable withdrawal ensures corpus longevity. Follows the proven 4% rule for retirement withdrawals." },
+                    { emoji: "🌾", text: "₹8 lakhs annually - Conservative approach", score: 3, feedback: "Very safe approach - corpus will likely grow even in retirement, leaving inheritance." },
+                    { emoji: "🥀", text: "₹15 lakhs annually - Aggressive withdrawal risk", score: 1, feedback: "Dangerous! May exhaust corpus in 15-20 years, especially if market returns are poor." },
+                    { emoji: "📈", text: "₹12 lakhs annually with corpus growth monitoring", score: 2, feedback: "Risky but manageable with active monitoring and flexibility to reduce spending in bad years." }
+                ],
+                learning: {
+                    rule: "4% Withdrawal Rule",
+                    description: "Withdraw maximum 4% annually from retirement corpus. Sunita can safely take ₹10 lakhs from ₹2.5 crores. Like harvesting fruits sustainably, this preserves the tree for future harvests!"
+                }
+            },
+            10: {
+                round: 4,
+                title: "Karan's Home Purchase",
+                icon: "🏠",
+                story: "Karan, 30, earns ₹90,000/month, wants to buy home worth ₹80 lakhs. Has ₹15 lakh savings. Bank pre-approved ₹70 lakh loan with ₹55,000 EMI. Also wants new car (₹8,000 EMI). Current expenses ₹25,000/month. Wife worried about lifestyle impact and future family plans.",
+                decision: "What's Karan's smartest approach to home purchase?",
+                options: [
+                    { emoji: "🏠", text: "Buy ₹60 lakh home with ₹35,000 EMI, no car loan", score: 4, feedback: "Excellent! Balanced approach within safe limits. The ₹35,000 EMI is about 39% of income, within recommended guidelines when considering all debt obligations." },
+                    { emoji: "⚠️", text: "Proceed with ₹80 lakh home + car loan (₹63,000 total EMI)", score: 1, feedback: "Dangerous! ₹63,000 EMI is 70% of income - will choke other financial goals and leave no buffer for emergencies." },
+                    { emoji: "💡", text: "Buy the home, delay car purchase by 2 years", score: 2, feedback: "Still too high EMI ratio - ₹55,000 is 61% of income, risky for future plans and family expansion." },
+                    { emoji: "📅", text: "Wait 2 years, save more for larger down payment, reduce EMI burden", score: 3, feedback: "Wise patience! Better preparation leads to easier EMIs and financial flexibility." }
+                ],
+                learning: {
+                    rule: "Home Affordability Rule",
+                    description: "Total EMIs (including all debts) should not exceed 40% of income. Karan's proposed ₹55,000 EMI is 61% of ₹90,000 salary - too high! Like a plant taking too much garden space, it will choke other financial goals."
+                }
+            },
+            11: {
+                round: 4,
+                title: "Maya's Credit Management",
+                icon: "💳",
+                story: "Maya has 3 credit cards (₹5 lakh total limit), uses ₹2.5 lakh monthly, pays full amount before due date. Credit score dropped from 780 to 720 despite no interest payments. Also planning car purchase worth ₹20 lakhs (annual income ₹18 lakhs). Wants to optimize credit usage and major purchase timing.",
+                decision: "How should Maya optimize her credit and spending strategy?",
+                options: [
+                    { emoji: "💧", text: "Limit credit usage, choose more affordable car", score: 4, feedback: "Perfect optimization! Credit health + smart car budget. Keeping credit utilization below 30% (ideally below 10%) helps credit scores. Car should be 10-20% of annual income." },
+                    { emoji: "🌊", text: "Continue current credit usage, buy ₹20 lakh car as planned", score: 1, feedback: "Double trouble - high credit utilization + overpriced car! Will further damage credit score and strain finances." },
+                    { emoji: "🏜️", text: "Drastically reduce credit usage, buy ₹15 lakh car", score: 2, feedback: "Under-utilization misses credit building opportunity. Car still slightly above recommended budget." },
+                    { emoji: "🎯", text: "Moderately reduce credit usage, negotiate ₹16 lakh car with larger down payment", score: 3, feedback: "Close to optimal but credit usage slightly high. Car budget still above recommended percentage of income." }
+                ],
+                learning: {
+                    rule: "Credit Optimization Rule",
+                    description: "Use max 30% credit limit (below 10% is even better), car value 10-20% of income. Maya should limit credit to ₹1.5 lakhs and car budget to ₹1.8-3.6 lakhs. Like optimal watering, this keeps both credit score and spending healthy!"
+                }
+            },
+            12: {
+                round: 4,
+                title: "Priya's Lifestyle Choices",
+                icon: "📈",
+                story: "Priya got 25% salary hike (₹80,000 to ₹1,00,000). Planning upgrades: premium apartment (+₹15,000 rent), new car EMI (+₹12,000), dining & shopping (+₹10,000). Total new expenses: ₹37,000. Current credit card usage ₹45,000 on ₹60,000 limit. Wants to 'live a little' after the promotion.",
+                decision: "How should Priya manage her post-promotion lifestyle and finances?",
+                options: [
+                    { emoji: "✅", text: "Increase lifestyle by ₹10,000, invest ₹10,000 extra", score: 4, feedback: "Perfect balance! Enjoy promotion while building wealth. Limits lifestyle creep to half the raise, which is a good rule of thumb." },
+                    { emoji: "⚠️", text: "Take all upgrades (₹37,000 increase)", score: 1, feedback: "Lifestyle inflation will eat entire raise and more! This will actually decrease savings rate." },
+                    { emoji: "🎯", text: "Increase lifestyle by ₹15,000, invest ₹5,000 extra", score: 3, feedback: "Reasonable balance between enjoyment and wealth building, but could save more of the raise." },
+                    { emoji: "💰", text: "Minimal lifestyle increase (₹5,000), maximize savings (₹15,000 extra)", score: 2, feedback: "Very disciplined but may miss motivation from promotion reward. Could lead to feeling deprived." }
+                ],
+                learning: {
+                    rule: "Lifestyle Inflation Rule",
+                    description: "Lifestyle inflation should be less than income growth. Many experts recommend saving at least half of any raise. Priya should limit lifestyle increase to ₹10-15,000, not ₹37,000. Like a garden that grows sustainably, leaving resources for future seasons!"
+                }
+            }
+        };
+
+        const roundTitles = {
+            1: "🌰 ROUND 1: FOUNDATION SEEDS",
+            2: "🛡️ ROUND 2: PROTECTIVE FENCE", 
+            3: "🌸 ROUND 3: BLOOMING WEALTH",
+            4: "🏆 ROUND 4: MASTER GARDENER"
+        };
+
+        function startGame() {
+            playerName = document.getElementById('player-name').value.trim();
+            if (!playerName) {
+                alert("Please enter your name to continue");
+                return;
+            }
+            
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('game-progress').style.display = 'block';
+            document.getElementById('scenario-container').style.display = 'flex';
+            updateRoundIndicator();
+            loadScenario(currentScenario);
+            updateGardenElements();
+            updateScoreDisplay();
+        }
+
+        function loadScenario(scenarioNum) {
+            selectedOption = null;
+            const scenario = scenarios[scenarioNum];
+            
+            // Update current round based on scenario
+            currentRound = scenario.round;
+            
+            // Update round indicator
+            updateRoundIndicator();
+            
+            // Update progress bar
+            const progress = ((scenarioNum - 1) / 12) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            
+            // Update progress bar color based on score percentage
+            updateProgressColor();
+            
+            // Load scenario content with icon
+            document.getElementById('scenario-story').innerHTML = `
+                <h3>${roundTitles[scenario.round]} - ${scenario.title}</h3>
+                <p>${scenario.story}</p>
+            `;
+            
+            document.getElementById('decision-point').innerHTML = `
+                <h4>${scenario.decision}</h4>
+            `;
+            
+            // Load options
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            scenario.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.onclick = () => selectOption(index);
+                optionDiv.innerHTML = `
+                    <span class="emoji">${option.emoji}</span>
+                    <div class="text">${option.text}</div>
+                `;
+                optionDiv.id = 'option-' + index;
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            // Update scenario counter
+            document.getElementById('scenario-counter').textContent = `Scenario ${scenarioNum} of 12`;
+            
+            // Update navigation buttons
+            document.getElementById('prev-btn').disabled = scenarioNum === 1;
+            document.getElementById('next-btn').disabled = true;
+            document.getElementById('next-btn').textContent = scenarioNum === 12 ? 'Complete Garden 🏆' : 'Next →';
+            
+            // Hide learning outcome
+            document.getElementById('learning-section').style.display = 'none';
+        }
+
+        function selectOption(optionIndex) {
+            if (selectedOption !== null) return; // Prevent multiple selections
+            
+            selectedOption = optionIndex;
+            const scenario = scenarios[currentScenario];
+            const option = scenario.options[optionIndex];
+            
+            // Update score
+            score += option.score;
+            updateScoreDisplay();
+            
+            // Store the selection
+            gameData[currentScenario] = optionIndex;
+            
+            // Highlight selected option
+            document.getElementById('option-' + optionIndex).classList.add('selected');
+            
+            // Add garden elements based on score
+            addGardenElements(currentScenario, option.score);
+            
+            // Find the correct option (score 4)
+            const correctOption = scenario.options.find(opt => opt.score === 4);
+            
+            // Show learning outcome with tiered feedback and ideal answer
+            const learningSection = document.getElementById('learning-section');
+            learningSection.innerHTML = `
+                <h4>${feedbackMessages[option.score]}</h4>
+                <p>${option.feedback}</p>
+                <div class="thumb-rule">
+                    <strong>${scenario.learning.rule}:</strong><br>
+                    ${scenario.learning.description}
+                </div>
+                <div class="ideal-answer">
+                    <strong>Ideal Answer:</strong><br>
+                    ${correctOption.emoji} ${correctOption.text}
+                </div>
+            `;
+            learningSection.style.display = 'block';
+            
+            // Enable next button
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function addGardenElements(scenarioNum, earnedScore) {
+            const garden = document.getElementById('current-garden');
+            
+            // Determine which emoji to use based on score
+            let emoji;
+            if (earnedScore === 4) {
+                // Use a unique flower/fruit for each scenario for perfect answers
+                emoji = perfectElements[scenarioNum - 1];
+            } else {
+                // Use standard emojis for other scores
+                emoji = elementTypes[earnedScore].emoji;
+            }
+            
+            // Add elements based on score
+            for (let i = 0; i < earnedScore; i++) {
+                setTimeout(() => {
+                    const element = document.createElement('div');
+                    element.className = 'garden-element';
+                    element.textContent = emoji;
+                    
+                    // Find an available position
+                    let positionIndex;
+                    let attempts = 0;
+                    do {
+                        positionIndex = Math.floor(Math.random() * gardenPositions.length);
+                        attempts++;
+                    } while (usedPositions.has(positionIndex) && attempts < 50);
+                    
+                    usedPositions.add(positionIndex);
+                    
+                    const position = gardenPositions[positionIndex];
+                    
+                    // Apply position with slight randomness
+                    Object.keys(position).forEach(key => {
+                        const value = parseInt(position[key]);
+                        const randomOffset = Math.random() * 10 - 5; // -5 to +5%
+                        element.style[key] = `calc(${value}% + ${randomOffset}%)`;
+                    });
+                    
+                    garden.appendChild(element);
+                }, i * 300);
+            }
+        }
+
+        function nextScenario() {
+            if (currentScenario === 12) {
+                showCompletionScreen();
+                return;
+            }
+            
+            currentScenario++;
+            
+            // Check if we just finished a round (every 3 scenarios)
+            if (currentScenario % 3 === 1) {
+                showRoundSummary(currentRound);
+                return;
+            }
+            
+            loadScenario(currentScenario);
+        }
+
+        function previousScenario() {
+            if (currentScenario === 1) return;
+            
+            // Adjust score by removing the previous score
+            const prevScenario = scenarios[currentScenario];
+            if (gameData[currentScenario] !== undefined) {
+                score -= prevScenario.options[gameData[currentScenario]].score;
+                delete gameData[currentScenario];
+            }
+            
+            currentScenario--;
+            loadScenario(currentScenario);
+            updateScoreDisplay();
+            updateGardenElements();
+        }
+
+        function updateRoundIndicator() {
+            for (let i = 1; i <= 4; i++) {
+                const roundDot = document.getElementById('round-' + i);
+                roundDot.classList.remove('completed', 'current');
+                
+                if (i < currentRound) {
+                    roundDot.classList.add('completed');
+                } else if (i === currentRound) {
+                    roundDot.classList.add('current');
+                }
+            }
+        }
+
+        function updateScoreDisplay() {
+            const percentage = Math.round((score / 48) * 100);
+            document.getElementById('score-text').textContent = `Garden Health: ${score}/48 (${percentage}%)`;
+            
+            // Update smiley based on percentage
+            const smileyElement = document.getElementById('score-smiley');
+            if (percentage >= 90) smileyElement.textContent = '😄';
+            else if (percentage >= 70) smileyElement.textContent = '🙂';
+            else if (percentage >= 50) smileyElement.textContent = '😐';
+            else if (percentage >= 30) smileyElement.textContent = '😕';
+            else smileyElement.textContent = '😢';
+            
+            // Update progress bar color
+            updateProgressColor();
+        }
+
+        function updateProgressColor() {
+            const percentage = Math.round((score / 48) * 100);
+            const progressFill = document.getElementById('progress-fill');
+            
+            if (percentage >= 80) {
+                progressFill.style.background = 'linear-gradient(90deg, #48dbfb, #4CAF50)';
+            } else if (percentage >= 60) {
+                progressFill.style.background = 'linear-gradient(90deg, #feca57, #48dbfb)';
+            } else if (percentage >= 40) {
+                progressFill.style.background = 'linear-gradient(90deg, #ff9ff3, #feca57)';
+            } else {
+                progressFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff9ff3)';
+            }
+        }
+
+        function updateGardenElements() {
+            const garden = document.getElementById('current-garden');
+            
+            // Clear existing elements
+            const elements = garden.querySelectorAll('.garden-element');
+            elements.forEach(el => el.remove());
+            
+            // Reset used positions
+            usedPositions.clear();
+            
+            // Add elements based on completed scenarios and their scores
+            for (let i = 1; i <= Math.min(currentScenario - 1, 12); i++) {
+                if (gameData[i] !== undefined) {
+                    const scenario = scenarios[i];
+                    const selectedOptionIndex = gameData[i];
+                    const earnedScore = scenario.options[selectedOptionIndex].score;
+                    addGardenElementsForScenario(garden, i, earnedScore);
+                }
+            }
+        }
+
+        function addGardenElementsForScenario(garden, scenarioNum, earnedScore) {
+            // Determine which emoji to use based on score
+            let emoji;
+            if (earnedScore === 4) {
+                // Use a unique flower/fruit for each scenario for perfect answers
+                emoji = perfectElements[scenarioNum - 1];
+            } else {
+                // Use standard emojis for other scores
+                emoji = elementTypes[earnedScore].emoji;
+            }
+            
+            for (let i = 0; i < earnedScore; i++) {
+                const element = document.createElement('div');
+                element.className = 'garden-element';
+                element.textContent = emoji;
+                
+                // Find an available position
+                let positionIndex;
+                let attempts = 0;
+                do {
+                    positionIndex = Math.floor(Math.random() * gardenPositions.length);
+                    attempts++;
+                } while (usedPositions.has(positionIndex) && attempts < 50);
+                
+                usedPositions.add(positionIndex);
+                
+                const position = gardenPositions[positionIndex];
+                
+                // Apply position with slight randomness
+                Object.keys(position).forEach(key => {
+                    const value = parseInt(position[key]);
+                    const randomOffset = Math.random() * 10 - 5; // -5 to +5%
+                    element.style[key] = `calc(${value}% + ${randomOffset}%)`;
+                });
+                
+                garden.appendChild(element);
+            }
+        }
+
+        function showRoundSummary(roundNumber) {
+            document.getElementById('game-progress').style.display = 'none';
+            document.getElementById(`round-${roundNumber}-summary`).style.display = 'flex';
+        }
+
+        function continueToRound(roundNumber) {
+            document.getElementById(`round-${roundNumber-1}-summary`).style.display = 'none';
+            document.getElementById('game-progress').style.display = 'block';
+            loadScenario(currentScenario);
+        }
+
+        function getGrade(percentage) {
+            if (percentage >= 90) return "Master Gardener 🌟";
+            if (percentage >= 80) return "Expert Gardener 🌺";
+            if (percentage >= 70) return "Good Gardener 🌸";
+            if (percentage >= 60) return "Growing Gardener 🌱";
+            if (percentage >= 40) return "Learning Gardener 🌿";
+            return "Beginner Gardener 🌰";
+        }
+
+        function showCompletionScreen() {
+            document.getElementById('game-progress').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'flex';
+            
+            const percentage = Math.round((score / 48) * 100);
+            const grade = getGrade(percentage);
+            
+            // Update final scores
+            document.getElementById('final-score-display').textContent = `Score: ${score}/48`;
+            document.getElementById('final-percentage').textContent = `${percentage}% Success Rate`;
+            document.getElementById('final-grade').textContent = `Grade: ${grade}`;
+            
+            // Update certificate
+            document.getElementById('certificate-name').textContent = playerName;
+            document.getElementById('certificate-score').textContent = score;
+            
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('certificate-date').textContent = now.toLocaleDateString('en-US', options);
+            
+            // Create user garden visualization
+            createMiniGarden('user-garden', score);
+            
+            // Create perfect garden visualization (all 4-point answers)
+            createPerfectGarden('perfect-garden');
+            
+            // Update garden score
+            document.getElementById('user-garden-score').textContent = `Score: ${score}/48`;
+            
+            // Update completion message
+            let message = '';
+            
+            if (percentage >= 90) {
+                message = 'Outstanding! You are a true Financial Garden Master! Your garden is a masterpiece of financial wisdom!';
+            } else if (percentage >= 80) {
+                message = 'Excellent work! Your garden is blooming beautifully with expert financial planning!';
+            } else if (percentage >= 70) {
+                message = 'Great job! Your garden is growing strong with solid financial knowledge!';
+            } else if (percentage >= 60) {
+                message = 'Good progress! Your garden is taking shape and on the right path to financial success!';
+            } else if (percentage >= 40) {
+                message = 'Keep growing! Your garden has potential and is beginning to sprout with financial awareness!';
+            } else {
+                message = 'Every expert was once a beginner! Keep learning and your garden will flourish with more financial knowledge!';
+            }
+            
+            document.getElementById('completion-message').textContent = message;
+        }
+
+        function createMiniGarden(containerId, totalScore) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            // Calculate elements to show based on score distribution
+            let remainingScore = totalScore;
+            let elementIndex = 0;
+            
+            for (let scenarioNum = 1; scenarioNum <= 12 && remainingScore > 0; scenarioNum++) {
+                if (gameData[scenarioNum] !== undefined) {
+                    const earnedScore = scenarios[scenarioNum].options[gameData[scenarioNum]].score;
+                    
+                    // Determine which emoji to use based on score
+                    let emoji;
+                    if (earnedScore === 4) {
+                        emoji = perfectElements[scenarioNum - 1];
+                    } else {
+                        emoji = elementTypes[earnedScore].emoji;
+                    }
+                    
+                    for (let i = 0; i < earnedScore && remainingScore > 0; i++) {
+                        const element = document.createElement('div');
+                        element.className = 'garden-element';
+                        element.textContent = emoji;
+                        element.style.fontSize = '16px';
+                        element.style.position = 'absolute';
+                        
+                        // Use a position from the predefined positions
+                        const positionIndex = elementIndex % gardenPositions.length;
+                        const position = gardenPositions[positionIndex];
+                        
+                        Object.keys(position).forEach(key => {
+                            const value = parseInt(position[key]);
+                            element.style[key] = `calc(${value}% * 0.7)`;
+                        });
+                        
+                        container.appendChild(element);
+                        elementIndex++;
+                        remainingScore--;
+                    }
+                }
+            }
+        }
+
+        function createPerfectGarden(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            // Add 4 elements for each of the 12 scenarios (perfect score)
+            let elementIndex = 0;
+            
+            for (let scenarioNum = 1; scenarioNum <= 12; scenarioNum++) {
+                const emoji = perfectElements[scenarioNum - 1];
+                
+                // Add 4 elements for each scenario (perfect score)
+                for (let i = 0; i < 4; i++) {
+                    const element = document.createElement('div');
+                    element.className = 'garden-element';
+                    element.textContent = emoji;
+                    element.style.fontSize = '16px';
+                    element.style.position = 'absolute';
+                    
+                    // Use a position from the predefined positions
+                    const positionIndex = elementIndex % gardenPositions.length;
+                    const position = gardenPositions[positionIndex];
+                    
+                    Object.keys(position).forEach(key => {
+                        const value = parseInt(position[key]);
+                        element.style[key] = `calc(${value}% * 0.7)`;
+                    });
+                    
+                    container.appendChild(element);
+                    elementIndex++;
+                }
+            }
+        }
+
+        function restartGame() {
+            currentRound = 1;
+            currentScenario = 1;
+            score = 0;
+            selectedOption = null;
+            gameData = {};
+            usedPositions.clear();
+            
+            document.getElementById('completion-screen').style.display = 'none';
+            document.getElementById('welcome-screen').style.display = 'flex';
+            document.getElementById('learning-section').style.display = 'none';
+            
+            // Hide any round summaries
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`round-${i}-summary`).style.display = 'none';
+            }
+            
+            updateScoreDisplay();
+            updateRoundIndicator();
+            
+            // Clear garden
+            const garden = document.getElementById('current-garden');
+            const elements = garden.querySelectorAll('.garden-element');
+            elements.forEach(el => el.remove());
+            
+            // Reset progress bar
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-fill').style.background = 'linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb)';
+        }
+    </script>
+</body>
+</html>
